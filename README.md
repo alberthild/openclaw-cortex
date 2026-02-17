@@ -17,6 +17,48 @@
 
 Works **alongside** `memory-core` (OpenClaw's built-in memory) — doesn't replace it.
 
+## Demo
+
+Try the interactive demo to see Cortex in action:
+
+```bash
+git clone https://github.com/alberthild/openclaw-cortex.git
+cd openclaw-cortex && npm install
+npx tsx demo/demo.ts
+```
+
+The demo simulates a bilingual (EN/DE) developer conversation and shows:
+
+- **🧵 Thread Tracking** — 3 threads detected, 1 auto-closed via "done ✅"
+- **🎯 Decision Extraction** — 4 decisions found ("decided", "the plan is", "beschlossen")
+- **😤→🔥 Mood Detection** — tracks emotional arc from frustrated to excited
+- **📸 Pre-Compaction Snapshot** — saves full conversation state before memory loss
+- **📋 Boot Context** — generates a dense BOOTSTRAP.md briefing (~800 tokens)
+
+<details>
+<summary>📸 Sample output</summary>
+
+```
+━━━ Phase 2: Thread Tracking Results ━━━
+
+  Found 3 threads (2 open, 1 closed)
+
+  ○ 🟠 the auth migration         → closed (detected "done ✅")
+  ● 🟡 dem Performance-Bug        → open, mood: frustrated
+  ● 🟡 the Kubernetes cluster     → open, waiting for Hetzner estimate
+
+━━━ Phase 3: Decision Extraction ━━━
+
+  Extracted 4 decisions:
+
+  🎯 The plan is to keep backward compatibility for 2 weeks   [medium]
+  🎯 We decided to use Auth0 as the provider                  [medium]
+  🎯 Wir machen Batched DataLoader                            [medium]
+  🎯 Beschlossen — warten auf Review von Alexey               [high: deploy]
+```
+
+</details>
+
 ## Install
 
 ```bash
