@@ -260,10 +260,10 @@ describe("topic patterns", () => {
       expect(anyMatch(topic, "just a random sentence")).toBe(false);
     });
 
-    it("limits captured topic to 30 chars", () => {
-      const topics = captureTopics(topic, "back to the very long topic name that exceeds thirty characters limit here");
+    it("limits captured topic to 40 chars", () => {
+      const topics = captureTopics(topic, "back to the very long topic name that exceeds forty characters limit here and keeps going");
       if (topics.length > 0) {
-        expect(topics[0].length).toBeLessThanOrEqual(31);
+        expect(topics[0].length).toBeLessThanOrEqual(41);
       }
     });
   });
@@ -274,7 +274,7 @@ describe("topic patterns", () => {
     it("captures topic after 'zurück zu'", () => {
       const topics = captureTopics(topic, "Zurück zu der Auth-Migration");
       expect(topics.length).toBeGreaterThan(0);
-      expect(topics[0]).toContain("der Auth-Migration");
+      expect(topics[0]).toContain("Auth-Migration");
     });
 
     it("captures topic after 'jetzt zu'", () => {

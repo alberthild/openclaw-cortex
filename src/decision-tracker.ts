@@ -157,6 +157,29 @@ export class DecisionTracker {
   }
 
   /**
+   * Add a decision directly (from LLM analysis). Deduplicates and persists.
+   */
+  addDecision(what: string, who: string, impact: ImpactLevel | string): void {
+    const now = new Date();
+    if (this.isDuplicate(what, now)) return;
+
+    const validImpact = (["critical", "high", "medium", "low"].includes(impact) ? impact : "medium") as ImpactLevel;
+
+    this.decisions.push({
+      id: randomUUID(),
+      what: what.slice(0, 200),
+      date: now.toISOString().slice(0, 10),
+      why: `LLM-detected decision (${who})`,
+      impact: validImpact,
+      who,
+      extracted_at: now.toISOString(),
+    });
+
+    this.enforceMax();
+    this.persist();
+  }
+
+  /**
    * Get all decisions (in-memory).
    */
   getDecisions(): Decision[] {

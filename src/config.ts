@@ -31,6 +31,14 @@ export const DEFAULTS: CortexConfig = {
   patterns: {
     language: "both",
   },
+  llm: {
+    enabled: false,
+    endpoint: "http://localhost:11434/v1",
+    model: "mistral:7b",
+    apiKey: "",
+    timeoutMs: 15000,
+    batchSize: 3,
+  },
 };
 
 function bool(value: unknown, fallback: boolean): boolean {
@@ -59,6 +67,7 @@ export function resolveConfig(pluginConfig?: Record<string, unknown>): CortexCon
   const pc = (raw.preCompaction ?? {}) as Record<string, unknown>;
   const nr = (raw.narrative ?? {}) as Record<string, unknown>;
   const pt = (raw.patterns ?? {}) as Record<string, unknown>;
+  const lm = (raw.llm ?? {}) as Record<string, unknown>;
 
   return {
     enabled: bool(raw.enabled, DEFAULTS.enabled),
@@ -90,6 +99,14 @@ export function resolveConfig(pluginConfig?: Record<string, unknown>): CortexCon
     },
     patterns: {
       language: lang(pt.language),
+    },
+    llm: {
+      enabled: bool(lm.enabled, DEFAULTS.llm.enabled),
+      endpoint: str(lm.endpoint, DEFAULTS.llm.endpoint),
+      model: str(lm.model, DEFAULTS.llm.model),
+      apiKey: str(lm.apiKey, DEFAULTS.llm.apiKey),
+      timeoutMs: int(lm.timeoutMs, DEFAULTS.llm.timeoutMs),
+      batchSize: int(lm.batchSize, DEFAULTS.llm.batchSize),
     },
   };
 }

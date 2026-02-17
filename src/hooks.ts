@@ -9,6 +9,7 @@ import { ThreadTracker } from "./thread-tracker.js";
 import { DecisionTracker } from "./decision-tracker.js";
 import { BootContextGenerator } from "./boot-context.js";
 import { PreCompaction } from "./pre-compaction.js";
+import { LlmEnhancer, resolveLlmConfig } from "./llm-enhance.js";
 
 /**
  * Extract message content from a hook event using the fallback chain.
@@ -29,6 +30,7 @@ type HookState = {
   workspace: string | null;
   threadTracker: ThreadTracker | null;
   decisionTracker: DecisionTracker | null;
+  llmEnhancer: LlmEnhancer | null;
 };
 
 function ensureInit(state: HookState, config: CortexConfig, logger: OpenClawPluginApi["logger"], ctx?: HookContext): void {
@@ -41,20 +43,40 @@ function ensureInit(state: HookState, config: CortexConfig, logger: OpenClawPlug
   if (!state.decisionTracker && config.decisionTracker.enabled) {
     state.decisionTracker = new DecisionTracker(state.workspace, config.decisionTracker, config.patterns.language, logger);
   }
+  if (!state.llmEnhancer && config.llm.enabled) {
+    state.llmEnhancer = new LlmEnhancer(config.llm, logger);
+  }
 }
 
 /** Register message hooks (message_received + message_sent). */
 function registerMessageHooks(api: OpenClawPluginApi, config: CortexConfig, state: HookState): void {
   if (!config.threadTracker.enabled && !config.decisionTracker.enabled) return;
 
-  const handler = (event: HookEvent, ctx: HookContext, senderOverride?: string) => {
+  const handler = async (event: HookEvent, ctx: HookContext, senderOverride?: string) => {
     try {
       ensureInit(state, config, api.logger, ctx);
       const content = extractContent(event);
       const sender = senderOverride ?? extractSender(event);
       if (!content) return;
+
+      // Regex-based processing (always runs — zero cost)
       if (config.threadTracker.enabled && state.threadTracker) state.threadTracker.processMessage(content, sender);
       if (config.decisionTracker.enabled && state.decisionTracker) state.decisionTracker.processMessage(content, sender);
+
+      // LLM enhancement (optional — batched, async, fire-and-forget)
+      if (state.llmEnhancer) {
+        const role = senderOverride ? "assistant" as const : "user" as const;
+        const analysis = await state.llmEnhancer.addMessage(content, sender, role);
+        if (analysis) {
+          // Apply LLM findings on top of regex results
+          if (state.threadTracker) state.threadTracker.applyLlmAnalysis(analysis);
+          if (state.decisionTracker) {
+            for (const dec of analysis.decisions) {
+              state.decisionTracker.addDecision(dec.what, dec.who, dec.impact);
+            }
+          }
+        }
+      }
     } catch (err) {
       api.logger.warn(`[cortex] message hook error: ${err}`);
     }
@@ -109,13 +131,13 @@ function registerCompactionHooks(api: OpenClawPluginApi, config: CortexConfig, s
  * Each handler is wrapped in try/catch — never throws.
  */
 export function registerCortexHooks(api: OpenClawPluginApi, config: CortexConfig): void {
-  const state: HookState = { workspace: null, threadTracker: null, decisionTracker: null };
+  const state: HookState = { workspace: null, threadTracker: null, decisionTracker: null, llmEnhancer: null };
 
   registerMessageHooks(api, config, state);
   registerSessionHooks(api, config, state);
   registerCompactionHooks(api, config, state);
 
   api.logger.info(
-    `[cortex] Hooks registered — threads:${config.threadTracker.enabled} decisions:${config.decisionTracker.enabled} boot:${config.bootContext.enabled} compaction:${config.preCompaction.enabled}`,
+    `[cortex] Hooks registered — threads:${config.threadTracker.enabled} decisions:${config.decisionTracker.enabled} boot:${config.bootContext.enabled} compaction:${config.preCompaction.enabled} llm:${config.llm.enabled}${config.llm.enabled ? ` (${config.llm.model}@${config.llm.endpoint})` : ""}`,
   );
 }

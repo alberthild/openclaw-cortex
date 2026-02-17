@@ -245,6 +245,14 @@ export type CortexConfig = {
   patterns: {
     language: "en" | "de" | "both";
   };
+  llm: {
+    enabled: boolean;
+    endpoint: string;
+    model: string;
+    apiKey: string;
+    timeoutMs: number;
+    batchSize: number;
+  };
 };
 
 // ============================================================

@@ -32,12 +32,22 @@ const WAIT_PATTERNS_DE = [
 ];
 
 const TOPIC_PATTERNS_EN = [
-  /(?:back to|now about|regarding)\s+(\w[\w\s-]{2,30})/i,
+  /(?:back to|now about|regarding|let's (?:talk|discuss|look at))\s+(?:the\s+)?(\w[\w\s-]{3,40})/i,
 ];
 
 const TOPIC_PATTERNS_DE = [
-  /(?:zurück zu|jetzt zu|bzgl\.?|wegen)\s+(\w[\w\s-]{2,30})/i,
+  /(?:zurück zu|jetzt zu|bzgl\.?|wegen|lass uns (?:über|mal))\s+(?:dem?|die|das)?\s*(\w[\w\s-]{3,40})/i,
 ];
+
+/** Words that should never be thread titles (noise filter) */
+const TOPIC_BLACKLIST = new Set([
+  "it", "that", "this", "the", "them", "what", "which", "there",
+  "das", "die", "der", "es", "was", "hier", "dort",
+  "nothing", "something", "everything", "nichts", "etwas", "alles",
+  "me", "you", "him", "her", "us", "mir", "dir", "ihm", "uns",
+  "today", "tomorrow", "yesterday", "heute", "morgen", "gestern",
+  "noch", "schon", "jetzt", "dann", "also", "aber", "oder",
+]);
 
 const MOOD_PATTERNS: Record<Exclude<Mood, "neutral">, RegExp> = {
   frustrated: /(?:fuck|shit|mist|nervig|genervt|damn|wtf|argh|schon wieder|zum kotzen|sucks)/i,
@@ -113,6 +123,24 @@ export function detectMood(text: string): Mood {
   }
 
   return lastMood;
+}
+
+/**
+ * Check if a topic candidate is noise (too short, blacklisted, or garbage).
+ */
+export function isNoiseTopic(topic: string): boolean {
+  const trimmed = topic.trim();
+  if (trimmed.length < 4) return true;
+  // Single word that's in blacklist
+  const words = trimmed.toLowerCase().split(/\s+/);
+  if (words.length === 1 && TOPIC_BLACKLIST.has(words[0])) return true;
+  // All words are blacklisted
+  if (words.every(w => TOPIC_BLACKLIST.has(w) || w.length < 3)) return true;
+  // Looks like a sentence fragment (starts with pronoun or blacklisted word)
+  if (/^(ich|i|we|wir|du|er|sie|he|she|it|es|nichts|nothing|etwas|something)\s/i.test(trimmed)) return true;
+  // Contains line breaks or is too long for a title
+  if (trimmed.includes("\n") || trimmed.length > 60) return true;
+  return false;
 }
 
 /** High-impact keywords for decision impact inference */

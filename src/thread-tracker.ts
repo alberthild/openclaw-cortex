@@ -7,7 +7,7 @@ import type {
   ThreadPriority,
   PluginLogger,
 } from "./types.js";
-import { getPatterns, detectMood, HIGH_IMPACT_KEYWORDS } from "./patterns.js";
+import { getPatterns, detectMood, HIGH_IMPACT_KEYWORDS, isNoiseTopic } from "./patterns.js";
 import type { PatternLanguage } from "./patterns.js";
 import { loadJson, saveJson, rebootDir, ensureRebootDir } from "./storage.js";
 
@@ -127,9 +127,10 @@ export class ThreadTracker {
     this.sessionMood = data.session_mood ?? "neutral";
   }
 
-  /** Create new threads from topic signals. */
+  /** Create new threads from topic signals (with noise filtering). */
   private createFromTopics(topics: string[], sender: string, mood: string, now: string): void {
     for (const topic of topics) {
+      if (isNoiseTopic(topic)) continue;
       const exists = this.threads.some(
         t => t.title.toLowerCase() === topic.toLowerCase() || matchesThread(t, topic),
       );
@@ -141,6 +142,52 @@ export class ThreadTracker {
         });
       }
     }
+  }
+
+  /**
+   * Apply LLM analysis results — creates threads, closes threads, adds decisions.
+   * Called from hooks when LLM enhance is enabled.
+   */
+  applyLlmAnalysis(analysis: {
+    threads: Array<{ title: string; status: "open" | "closed"; summary?: string }>;
+    closures: string[];
+    mood: string;
+  }): void {
+    const now = new Date().toISOString();
+
+    // Create threads from LLM
+    for (const lt of analysis.threads) {
+      if (isNoiseTopic(lt.title)) continue;
+      const exists = this.threads.some(
+        t => t.title.toLowerCase() === lt.title.toLowerCase() || matchesThread(t, lt.title),
+      );
+      if (!exists) {
+        this.threads.push({
+          id: randomUUID(), title: lt.title, status: lt.status,
+          priority: inferPriority(lt.title), summary: lt.summary ?? "LLM-detected",
+          decisions: [], waiting_for: null, mood: analysis.mood ?? "neutral",
+          last_activity: now, created: now,
+        });
+      }
+    }
+
+    // Close threads from LLM closures
+    for (const closure of analysis.closures) {
+      for (const thread of this.threads) {
+        if (thread.status === "open" && matchesThread(thread, closure)) {
+          thread.status = "closed";
+          thread.last_activity = now;
+        }
+      }
+    }
+
+    // Update session mood
+    if (analysis.mood && analysis.mood !== "neutral") {
+      this.sessionMood = analysis.mood;
+    }
+
+    this.dirty = true;
+    this.persist();
   }
 
   /** Close threads matching closure signals. */
