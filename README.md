@@ -17,9 +17,9 @@
 
 Works **alongside** `memory-core` (OpenClaw's built-in memory) — doesn't replace it.
 
-## Demo
+## 🎬 Demo
 
-Try the interactive demo to see Cortex in action:
+Try the interactive demo — it simulates a real bilingual dev conversation and shows every Cortex feature in action:
 
 ```bash
 git clone https://github.com/alberthild/openclaw-cortex.git
@@ -27,37 +27,154 @@ cd openclaw-cortex && npm install
 npx tsx demo/demo.ts
 ```
 
-The demo simulates a bilingual (EN/DE) developer conversation and shows:
+### What the demo shows
 
-- **🧵 Thread Tracking** — 3 threads detected, 1 auto-closed via "done ✅"
-- **🎯 Decision Extraction** — 4 decisions found ("decided", "the plan is", "beschlossen")
-- **😤→🔥 Mood Detection** — tracks emotional arc from frustrated to excited
-- **📸 Pre-Compaction Snapshot** — saves full conversation state before memory loss
-- **📋 Boot Context** — generates a dense BOOTSTRAP.md briefing (~800 tokens)
-
-<details>
-<summary>📸 Sample output</summary>
+A 13-message conversation between a developer (Albert) and an AI assistant (Claudia) covering 3 topics in English and German. Cortex processes every message in real-time:
 
 ```
-━━━ Phase 2: Thread Tracking Results ━━━
+👤 Albert: Let's get back to the auth migration. We need to switch from JWT to OAuth2.
+🤖 Claudia: I'll start with the token validation layer. The plan is to keep backward compatibility for 2 weeks.
+👤 Albert: Agreed. We decided to use Auth0 as the provider.
+👤 Albert: Also, jetzt zu dem Performance-Bug. Die API braucht 3 Sekunden für simple Queries.
+🤖 Claudia: Ich hab den Profiler laufen lassen. Das Problem ist der N+1 Query im User-Resolver.
+👤 Albert: Mist, das ist nervig. Wir brauchen das bis Freitag gefixt.
+🤖 Claudia: Wir machen Batched DataLoader.
+👤 Albert: Beschlossen. Und wir warten auf den Review von Alexey bevor wir deployen.
+🤖 Claudia: Auth migration is done ✅ All tests green, backward compat verified.
+👤 Albert: Nice! Perfekt gelaufen. 🚀
+👤 Albert: Now about the Kubernetes cluster — we need to plan the migration from Docker Compose.
+🤖 Claudia: I'll draft an architecture doc. Waiting for the cost estimate from Hetzner first.
+👤 Albert: Guter Fortschritt heute. Lass uns morgen mit dem K8s-Plan weitermachen.
+```
 
-  Found 3 threads (2 open, 1 closed)
+<details>
+<summary><b>🧵 Thread Tracking</b> — 3 threads detected, 1 auto-closed</summary>
 
-  ○ 🟠 the auth migration         → closed (detected "done ✅")
-  ● 🟡 dem Performance-Bug        → open, mood: frustrated
-  ● 🟡 the Kubernetes cluster     → open, waiting for Hetzner estimate
+```
+Found 3 threads (2 open, 1 closed)
 
-━━━ Phase 3: Decision Extraction ━━━
+  ○ 🟠 the auth migration
+      Status: closed           ← detected "done ✅" as closure signal
+      Priority: high
+      Mood: neutral
 
-  Extracted 4 decisions:
+  ● 🟡 dem Performance-Bug
+      Status: open
+      Priority: medium
+      Mood: neutral
 
-  🎯 The plan is to keep backward compatibility for 2 weeks   [medium]
-  🎯 We decided to use Auth0 as the provider                  [medium]
-  🎯 Wir machen Batched DataLoader                            [medium]
-  🎯 Beschlossen — warten auf Review von Alexey               [high: deploy]
+  ● 🟡 the Kubernetes cluster
+      Status: open
+      Priority: medium
+      Mood: neutral
+      Waiting for: cost estimate from Hetzner
 ```
 
 </details>
+
+<details>
+<summary><b>🎯 Decision Extraction</b> — 4 decisions found across 2 languages</summary>
+
+```
+  🎯 The plan is to keep backward compatibility for 2 weeks
+      Impact: medium | Who: claudia
+
+  🎯 We decided to use Auth0 as the provider
+      Impact: medium | Who: albert
+
+  🎯 Wir machen Batched DataLoader
+      Impact: medium | Who: claudia
+
+  🎯 Beschlossen. Und wir warten auf den Review von Alexey bevor wir deployen.
+      Impact: high | Who: albert
+```
+
+Trigger patterns: `"the plan is"`, `"we decided"`, `"wir machen"`, `"beschlossen"`
+
+</details>
+
+<details>
+<summary><b>🔥 Mood Detection</b> — session mood tracked from patterns</summary>
+
+```
+  Session mood: 🔥 excited
+  (Detected from "Nice!", "Perfekt gelaufen", "🚀")
+```
+
+Supported moods: `frustrated` 😤 · `excited` 🔥 · `tense` ⚡ · `productive` 🔧 · `exploratory` 🔬 · `neutral` 😐
+
+</details>
+
+<details>
+<summary><b>📸 Pre-Compaction Snapshot</b> — saves state before memory loss</summary>
+
+```
+  Success: yes
+  Messages snapshotted: 13
+  Warnings: none
+
+  Hot Snapshot (memory/reboot/hot-snapshot.md):
+    # Hot Snapshot — 2026-02-17
+    ## Last conversation before compaction
+
+    **Recent messages:**
+    - [user] Let's get back to the auth migration...
+    - [assistant] I'll start with the token validation layer...
+    - [user] Agreed. We decided to use Auth0 as the provider.
+    - [user] Also, jetzt zu dem Performance-Bug...
+    - ...
+```
+
+</details>
+
+<details>
+<summary><b>📋 Boot Context (BOOTSTRAP.md)</b> — ~786 tokens, ready for next session</summary>
+
+```markdown
+# Context Briefing
+Generated: 2026-02-17 | Local: 12:30
+
+## ⚡ State
+Mode: Afternoon — execution mode
+Last session mood: excited 🔥
+
+## 📖 Narrative (last 24h)
+**Completed:**
+- ✅ the auth migration: Topic detected from albert
+
+**Open:**
+- 🟡 dem Performance-Bug: Topic detected from albert
+- 🟡 the Kubernetes cluster: Topic detected from albert
+
+**Decisions:**
+- 🎯 The plan is to keep backward compatibility for 2 weeks (claudia)
+- 🎯 We decided to use Auth0 as the provider (albert)
+- 🎯 Wir machen Batched DataLoader (claudia)
+- 🎯 Beschlossen. Warten auf Review von Alexey (albert)
+```
+
+Total: 3,143 chars · ~786 tokens · regenerated every session start
+
+</details>
+
+<details>
+<summary><b>📁 Generated Files</b></summary>
+
+```
+{workspace}/
+├── BOOTSTRAP.md                          3,143 bytes
+└── memory/reboot/
+    ├── threads.json                      1,354 bytes
+    ├── decisions.json                    1,619 bytes
+    ├── narrative.md                        866 bytes
+    └── hot-snapshot.md                   1,199 bytes
+```
+
+All plain JSON + Markdown. No database, no external dependencies.
+
+</details>
+
+> 📝 Full raw output: [`demo/SAMPLE-OUTPUT.md`](demo/SAMPLE-OUTPUT.md)
 
 ## Install
 

@@ -1,6 +1,6 @@
 {
   "name": "@vainplex/openclaw-cortex",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenClaw plugin: conversation intelligence — thread tracking, decision extraction, boot context, pre-compaction snapshots",
   "type": "module",
   "main": "dist/index.js",
@@ -27,7 +27,8 @@
   "openclaw": {
     "extensions": [
       "./dist/index.js"
-    ]
+    ],
+    "id": "openclaw-cortex"
   },
   "keywords": [
     "openclaw",
