@@ -17,6 +17,16 @@
 
 Works **alongside** `memory-core` (OpenClaw's built-in memory) — doesn't replace it.
 
+### Regex + LLM Hybrid (v0.2.0)
+
+By default, Cortex uses fast regex patterns (zero cost, instant). Optionally, you can plug in **any OpenAI-compatible LLM** for deeper analysis:
+
+- **Ollama** (local, free): `mistral:7b`, `qwen2.5:7b`, `llama3.1:8b`
+- **OpenAI**: `gpt-4o-mini`, `gpt-4o`
+- **OpenRouter / vLLM / any OpenAI-compatible API**
+
+The LLM runs **on top of regex** — it enhances, never replaces. If the LLM is down, Cortex falls back silently to regex-only.
+
 ## 🎬 Demo
 
 Try the interactive demo — it simulates a real bilingual dev conversation and shows every Cortex feature in action:
@@ -236,6 +246,52 @@ Add to your OpenClaw config:
 }
 ```
 
+### LLM Enhancement (optional)
+
+Add an `llm` section to enable AI-powered analysis on top of regex:
+
+```json
+{
+  "plugins": {
+    "openclaw-cortex": {
+      "enabled": true,
+      "llm": {
+        "enabled": true,
+        "endpoint": "http://localhost:11434/v1",
+        "model": "mistral:7b",
+        "apiKey": "",
+        "timeoutMs": 15000,
+        "batchSize": 3
+      }
+    }
+  }
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `enabled` | `false` | Enable LLM enhancement |
+| `endpoint` | `http://localhost:11434/v1` | Any OpenAI-compatible API endpoint |
+| `model` | `mistral:7b` | Model identifier |
+| `apiKey` | `""` | API key (optional, for cloud providers) |
+| `timeoutMs` | `15000` | Timeout per LLM call |
+| `batchSize` | `3` | Messages to buffer before calling the LLM |
+
+**Examples:**
+
+```jsonc
+// Ollama (local, free)
+{ "endpoint": "http://localhost:11434/v1", "model": "mistral:7b" }
+
+// OpenAI
+{ "endpoint": "https://api.openai.com/v1", "model": "gpt-4o-mini", "apiKey": "sk-..." }
+
+// OpenRouter
+{ "endpoint": "https://openrouter.ai/api/v1", "model": "meta-llama/llama-3.1-8b-instruct", "apiKey": "sk-or-..." }
+```
+
+The LLM receives batches of messages and returns structured JSON: detected threads, decisions, closures, and mood. Results are merged with regex findings — the LLM can catch things regex misses (nuance, implicit decisions, context-dependent closures).
+
 Restart OpenClaw after configuring.
 
 ## How It Works
@@ -273,28 +329,49 @@ Thread and decision detection supports English, German, or both:
 - **Topic patterns**: "back to", "now about", "jetzt zu", "bzgl."
 - **Mood detection**: frustrated, excited, tense, productive, exploratory
 
+### LLM Enhancement Flow
+
+When `llm.enabled: true`:
+
+```
+message_received → regex analysis (instant, always)
+                 → buffer message
+                 → batch full? → LLM call (async, fire-and-forget)
+                              → merge LLM results into threads + decisions
+                              → LLM down? → silent fallback to regex-only
+```
+
+The LLM sees a conversation snippet (configurable batch size) and returns:
+- **Threads**: title, status (open/closed), summary
+- **Decisions**: what was decided, who, impact level
+- **Closures**: which threads were resolved
+- **Mood**: overall conversation mood
+
 ### Graceful Degradation
 
 - Read-only workspace → runs in-memory, skips writes
 - Corrupt JSON → starts fresh, next write recovers
 - Missing directories → creates them automatically
 - Hook errors → caught and logged, never crashes the gateway
+- LLM timeout/error → falls back to regex-only, no data loss
 
 ## Development
 
 ```bash
 npm install
-npm test            # 270 tests
+npm test            # 288 tests
 npm run typecheck   # TypeScript strict mode
 npm run build       # Compile to dist/
 ```
 
 ## Performance
 
-- Zero runtime dependencies (Node built-ins only)
-- All hook handlers are non-blocking (fire-and-forget)
+- Zero runtime dependencies (Node built-ins only — even LLM calls use `node:http`)
+- Regex analysis: instant, runs on every message
+- LLM enhancement: async, batched, fire-and-forget (never blocks hooks)
 - Atomic file writes via `.tmp` + rename
-- Tested with 270 unit + integration tests
+- Noise filter prevents garbage threads from polluting state
+- Tested with 288 unit + integration tests
 
 ## Architecture
 
