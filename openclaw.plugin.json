@@ -148,6 +148,47 @@
             "description": "Language for regex pattern matching: English, German, or both"
           }
         }
+      },
+      "llm": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Optional LLM enhancement — any OpenAI-compatible API (Ollama, OpenAI, OpenRouter, vLLM, etc.)",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable LLM-powered analysis on top of regex patterns"
+          },
+          "endpoint": {
+            "type": "string",
+            "default": "http://localhost:11434/v1",
+            "description": "OpenAI-compatible API endpoint"
+          },
+          "model": {
+            "type": "string",
+            "default": "mistral:7b",
+            "description": "Model identifier (e.g. mistral:7b, gpt-4o-mini)"
+          },
+          "apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "API key (optional, for cloud providers)"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 60000,
+            "default": 15000,
+            "description": "Timeout per LLM call in milliseconds"
+          },
+          "batchSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 3,
+            "description": "Number of messages to buffer before calling the LLM"
+          }
+        }
       }
     }
   }
