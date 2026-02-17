@@ -381,7 +381,17 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full design document in
 
 MIT — see [LICENSE](LICENSE)
 
-## Related
+## Part of the Vainplex Plugin Suite
 
-- [@vainplex/nats-eventstore](https://www.npmjs.com/package/@vainplex/nats-eventstore) — Publish OpenClaw events to NATS JetStream
-- [OpenClaw](https://github.com/openclaw/openclaw) — Multi-channel AI gateway
+| # | Plugin | Status | Description |
+|---|--------|--------|-------------|
+| 1 | [@vainplex/nats-eventstore](https://github.com/alberthild/openclaw-nats-eventstore) | ✅ Published | NATS JetStream event persistence |
+| 2 | **@vainplex/openclaw-cortex** | ✅ Published | Conversation intelligence — threads, decisions, boot context (this plugin) |
+| 3 | [@vainplex/openclaw-knowledge-engine](https://github.com/alberthild/openclaw-knowledge-engine) | ✅ Published | Real-time knowledge extraction |
+| 4 | @vainplex/openclaw-governance | 📋 Planned | Policy enforcement + guardrails |
+| 5 | @vainplex/openclaw-memory-engine | 📋 Planned | Unified memory layer |
+| 6 | @vainplex/openclaw-health-monitor | 📋 Planned | System health + auto-healing |
+
+## License
+
+MIT — see [LICENSE](LICENSE)
