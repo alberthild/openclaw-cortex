@@ -1,3 +1,7 @@
+> **📦 This plugin is part of the [Vainplex OpenClaw Suite](https://github.com/alberthild/vainplex-openclaw)** — a collection of five production plugins that turn OpenClaw into a self-governing, learning system. See the monorepo for the full picture.
+
+---
+
 # @vainplex/openclaw-cortex
 
 > Conversation intelligence layer for [OpenClaw](https://github.com/openclaw/openclaw) — automated thread tracking, decision extraction, boot context generation, and pre-compaction snapshots.
